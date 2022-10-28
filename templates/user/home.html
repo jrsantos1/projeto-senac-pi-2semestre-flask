@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block conteudo %}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th> Nome </th>
+            <th> Conta </th>
+            <th> Saldo </th>
+            <th> Tipo </th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td> {{ cliente.nome }} </td>
+            <td> {{ conta.conta }} </td>
+            <td> {{ conta.saldo }} </td>
+            <td> {{ conta.tipo }} </td>
+        </tr>
+    </tbody>
+</table>
+
+{% endblock %}
+
+
+
