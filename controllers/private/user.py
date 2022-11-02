@@ -4,6 +4,7 @@ from flask import session, redirect, url_for, render_template, request, flash
 from config import App
 from utils.auth import auth
 from utils.email import config_email as e_mail
+from utils.data.user import *
 import win32com.client as wincl
 from jinja2 import FileSystemLoader, Environment
 import pythoncom 
@@ -15,14 +16,13 @@ app = aplicativo.get_app()
 # rota inicial usuário
 @app.route("/user")
 def index_user():
-    if not(not('usuario_logado' not in session or session['usuario_logado'] == None)):
-        return redirect(url_for('login'))
-    else:
-        cpf = session['usuario_logado']
-        cliente = Cliente.query.filter_by(cpf=cpf).first()
-        conta = Conta.query.filter_by(cliente_id=cliente.cliente_id).first()
-        extrato = Extrato.query.filter_by(conta_id=conta.conta_id).limit(5)
-        return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato)
+    auth.verificarUsuarioLogado();
+    cpf = session['usuario_logado']
+    cliente = get_cliente_logado(cpf)
+    conta = get_conta_cliente_logado(cpf)
+    extrato = get_conta_extrato(cpf, size=5)
+   
+    return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato)
 
 # rota para realizar logout
 @app.route("/user/logout")
@@ -212,4 +212,11 @@ def transferir():
     
     return redirect(url_for('index_user'))
         
-    
+@app.route("/user/conta", methods=['GET'])
+def conta_usuario():
+    auth.verificarUsuarioLogado();
+    cpf = session['usuario_logado']
+    cliente = get_cliente_logado(cpf)
+    conta = get_conta_cliente_logado(cpf)
+    extrato = get_conta_extrato(cpf, size=5)
+    return render_template('user/conta.html', cliente = cliente, conta = conta, extrato=extrato)

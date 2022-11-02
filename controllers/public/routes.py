@@ -20,6 +20,10 @@ def home():
       'Cidade': ['SF', 'SF', 'SF', 'Montreal', 'Montreal', 'Montreal'] 
     })
     fig = px.bar(df, x='Fruit', y='Amount', color='Cidade', barmode='group')
+    
+    
+    
+    
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
 
     clientes = Cliente.query.order_by(Cliente.cliente_id)
