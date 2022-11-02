@@ -2,24 +2,53 @@
 
 {% block conteudo %}
 
-<table class="table">
-    <thead>
-        <tr>
-            <th> Nome </th>
-            <th> Conta </th>
-            <th> Saldo </th>
-            <th> Tipo </th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td> {{ cliente.nome }} </td>
-            <td> {{ conta.conta }} </td>
-            <td> {{ conta.saldo }} </td>
-            <td> {{ conta.tipo }} </td>
-        </tr>
-    </tbody>
-</table>
+<div class="row container-fluid">
+    <div class="col-3">
+        Olá, {{ cliente.nome }}
+    </div>
+    <div class="col-3">
+        Conta {{ conta.conta }}
+    </div>
+    <div class="col-3">
+        Saldo R$ {{ conta.saldo }}
+    </div>
+    <div class="col-3">
+        Conta {{ conta.tipo }}
+    </div>
+</div>
+
+{% include "user/header_user.html" %}
+
+<div class="row mt-5">
+    <div class="col-6">
+        <div class="container"> 
+            <h1> Extrato </h1>
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Fluxo</th>
+                        <th>Valor </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item_extrato in extrato %}
+                    <tr>
+                        <td> {{ item_extrato.extrato_data }} </td>
+                        <td> {{ item_extrato.fluxo}} </td>
+                        <td> {{ item_extrato.valor}} </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+    </div>
+    <div class="col-6 container-fluid">
+
+    </div>
+</div>
+
 
 {% endblock %}
 

@@ -21,11 +21,12 @@ def index_user():
         cpf = session['usuario_logado']
         cliente = Cliente.query.filter_by(cpf=cpf).first()
         conta = Conta.query.filter_by(cliente_id=cliente.cliente_id).first()
-        return render_template('user/home.html', cliente = cliente, conta = conta)
+        extrato = Extrato.query.filter_by(conta_id=conta.conta_id).limit(5)
+        return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato)
 
 # rota para realizar logout
 @app.route("/user/logout")
-def user_logout():
+def logout():
     if 'usuario_logado' in session:
         session['usuario_logado'] = None
         return redirect(url_for('home'))
