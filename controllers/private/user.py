@@ -1,28 +1,77 @@
+
+# libs externas
+from tempfile import template
+import win32com.client as wincl
+from jinja2 import FileSystemLoader, Environment
+import plotly
+import plotly.express as px
+import json
+import pythoncom 
+import pandas as pd
 import email
 from models.tables import *
 from flask import session, redirect, url_for, render_template, request, flash
+import locale
+
+# libs projeto
+
 from config import App
 from utils.auth import auth
 from utils.email import config_email as e_mail
 from utils.data.user import *
-import win32com.client as wincl
-from jinja2 import FileSystemLoader, Environment
-import pythoncom 
+from utils.chart import chart_user
+from utils.conta.transferencia import *
+from utils.data.cotacoes import get_cotacoes 
 
 
 aplicativo = App()
 app = aplicativo.get_app()
 
+@app.template_filter()
+def moeda(value):
+    locale.setlocale(locale.LC_MONETARY, 'pt_BR.UTF-8') 
+    format = locale.currency(value)
+    return format
+    
 # rota inicial usuário
 @app.route("/user")
 def index_user():
-    auth.verificarUsuarioLogado();
-    cpf = session['usuario_logado']
-    cliente = get_cliente_logado(cpf)
-    conta = get_conta_cliente_logado(cpf)
-    extrato = get_conta_extrato(cpf, size=5)
    
-    return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato)
+    valida = auth.verificarUsuarioLogado()
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+    
+    cpf = session['usuario_logado']
+    cliente = get_cliente(cpf)
+    conta = get_conta(cpf)
+    extrato = get_extrato(cpf, size=5)    
+    
+    extrato.saldo_atual = lambda x : str(locale.currency(x))
+    
+    for extratos in extrato:
+        print(extratos.saldo_atual)
+        print(type(extratos.saldo_atual))
+    
+    # montando grafico
+    
+    grafico_saldo_atual, grafico_data = chart_user.get_chart_extrato_data(cpf)
+    y = grafico_saldo_atual
+    x = grafico_data
+    df = pd.DataFrame(dict(
+        x = x,
+        y = y 
+    ))
+    fig = px.line(df, y=y or [0],  x=x or [0], title="Saldo Histórico", template='plotly_dark', color_discrete_sequence=px.colors.qualitative.Dark2)
+
+    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
+    
+    # pegar cotacoes atuais
+    
+    cotacoes = get_cotacoes()
+    dolar = float(cotacoes['dolar']['today'])
+    
+    return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato,graphJSON=graphJSON, cotacao=cotacoes)
 
 # rota para realizar logout
 @app.route("/user/logout")
@@ -37,6 +86,12 @@ def logout():
 @app.route("/novo_usuario", methods=['POST'])
 def novo_usuario():
     
+    valida = auth.verificarUsuarioLogado()
+    
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+        
     cpf =  request.form['cpf']
     cliente = Cliente.query.filter_by(cpf=cpf).first()
     usuario = Usuario.query.filter_by(cpf=cpf).first()
@@ -118,105 +173,88 @@ def novo_usuario():
     
     return redirect(url_for('login'))
 
-# rota para direcionar tela de transação
+# Direcionar par tela de transacao
 @app.route('/user/transacao')
 def transacao():
-    return render_template('user/transacao.html')
+    
+    valida = auth.verificarUsuarioLogado()
+    
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+    
+    return redirect(url_for('index_user'))
 
 # rota para realizar transferência
 @app.route("/user/transferir", methods=['POST'])
-def transferir():
+def transferir():   
+    valida = auth.verificarUsuarioLogado()
     
-    auth.verificarUsuarioLogado()
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+  
+   # dados destinatario   
+    cpf_destinatario = request.form['cpf_destinatario']
+
+    transferencia = gerar_transferencia(cpf_destinatario)
     
-    conta_destino = request.form['conta_destino']
+    if transferencia:
+        return redirect(url_for('index_user'))
+    else:
+        return redirect(url_for('transacao'))
+
+# rota para realizar saque
+@app.route("/conta/saque", methods=['POST'])
+def saque():
+    
+    valida = auth.verificarUsuarioLogado()
+    
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+    
     valor = request.form['valor']
-    conta = Conta.query.filter_by(conta_id=conta_destino).first()
-    print(conta)
-    cliente_logado = Cliente.query.filter_by(cpf=session['usuario_logado']).first()
-    conta_logado = Conta.query.filter_by(cliente_id=cliente_logado.cliente_id).first()
+    saque = sacar(valor=valor)
     
-    user_cliente_logado = Usuario.query.filter_by(cpf=cliente_logado.cpf).first()
-    
-    cliente_destinatario = Cliente.query.filter_by(cliente_id=conta.cliente_id).first()
-    print(cliente_destinatario.cliente_id)
-    user_cliente_destinatario = Usuario.query.filter_by(cpf=cliente_destinatario.cpf).first() 
-    print(user_cliente_destinatario.cpf)
-
-
-    if not(conta) or conta == None: 
-        flash('Conta de destino não existe')
+    if saque: 
+        return redirect(url_for('index_user'))
+    else: 
         return redirect(url_for('transacao'))
     
-    if conta_logado.saldo < float(valor):
-         flash('saldo insuficiente')
-         return redirect(url_for('transacao'))
+
+@app.route("/conta/deposito", methods=['POST'])
+def deposito():
+    valida = auth.verificarUsuarioLogado()
     
-    data = request.form['data']
-    tipo = request.form['tipo']
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
     
-    # salando transacao
+    valor = request.form['valor']
     
-    transacao = Transacao(
-        conta_origem_id=conta_logado.conta_id, 
-        conta_destino_id=conta.conta_id, 
-        transacao_data=data, 
-        valor=valor, 
-        operacao_id=tipo)
+    deposito = depositar(valor)
     
-    db.session.add(transacao)
-    db.session.commit()
-    
-    # alterando saldos 
-    
-    novo_valor = float(valor)
-    conta_logado.saldo -= novo_valor 
-    conta.saldo += novo_valor    
-    db.session.add(conta_logado)
-    db.session.add(conta)
-    db.session.commit()
-    
-    # gerando extrato
-    saldo_extrado_saida = novo_valor - (novo_valor * 2) 
-    extrato_saida = Extrato(conta_id=conta_logado.conta_id, extrato_data=data, fluxo='Saída', valor=saldo_extrado_saida)
-    extrato_entrada = Extrato(conta_id=conta.conta_id, extrato_data=data, fluxo='Entrada', valor=valor)
+    if deposito:
+         return redirect(url_for('index_user'))
+    else: 
+        return redirect(url_for('transacao'))
         
-    db.session.add(extrato_saida)
-    db.session.add(extrato_entrada)
+        
     
-    db.session.commit()
     
-    # enviar e-mail 
-    
-    dados_email = {
-        'valor': valor,
-        'destinatario':conta_destino,
-        'data': data
-    }
-    
-    print(dados_email['destinatario'])
-    
-    template = e_mail.carregar_template(dados_email, 'email/email_transferencia_realizada.html')
-    print(user_cliente_logado)
-    e_mail.enviar(destinatario=user_cliente_logado.email, template=template)
-    
-    dados_email = {
-        'nome' : 'teste',
-        'valor': valor,
-        'remetente':user_cliente_logado.cpf,
-        'data': data
-    }
-    
-    template_transferencia_recebida = e_mail.carregar_template(dados_email,'email/email_transferencia_recebida.html' )
-    e_mail.enviar(destinatario=user_cliente_destinatario.email, template=template_transferencia_recebida)
-    
-    return redirect(url_for('index_user'))
         
 @app.route("/user/conta", methods=['GET'])
 def conta_usuario():
-    auth.verificarUsuarioLogado();
+    valida = auth.verificarUsuarioLogado()
+    
+    if valida:
+        print(valida)
+        return redirect(url_for('login'))
+    
+    
     cpf = session['usuario_logado']
-    cliente = get_cliente_logado(cpf)
-    conta = get_conta_cliente_logado(cpf)
-    extrato = get_conta_extrato(cpf, size=5)
+    cliente = get_cliente(cpf)
+    conta = get_conta(cpf)
+    extrato = get_extrato(cpf, size=5)
     return render_template('user/conta.html', cliente = cliente, conta = conta, extrato=extrato)
