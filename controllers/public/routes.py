@@ -13,15 +13,15 @@ app = aplicativo.get_app()
 # Página inicial
 @app.route("/")
 def home():
-    df = pd.DataFrame({ 
-      'Fruit': ['Maçãs', 'Laranjas', 'Bananas', 'Maçãs', 'Laranjas', 
-      'Bananas'] , 
-      'Amount': [4, 1, 2, 2, 4, 5], 
-      'Cidade': ['SF', 'SF', 'SF', 'Montreal', 'Montreal', 'Montreal'] 
-    })
-    fig = px.bar(df, x='Fruit', y='Amount', color='Cidade', barmode='group')
+
+    y = [1,2,3,6]
+    x = ['jhonatan','lucas','fernando','marques', ]
     
-    
+    df = pd.DataFrame(dict(
+    x = [1, 3, 2, 4],
+    y = [1, 2, 3, 4]
+    ))
+    fig = px.line(df, y=y,  x=x, title="Unsorted Input") 
     
     
     graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
@@ -44,6 +44,7 @@ def login():
     if 'usuario_logado' in session:
         if not (session['usuario_logado'] == None):
             return redirect(url_for('index_user'))
+        
     return render_template("user/login.html", titulo="login")
 
 # rotas de autenticação
@@ -58,7 +59,6 @@ def autenticar():
     if usuario:
         if senha == usuario.senha:
             session['usuario_logado'] = usuario.cpf
-            flash('login efetuado com sucesso')
             cliente = Cliente.query.filter_by(cpf=cpf).first()
             return redirect(url_for('index_user'))
         else:

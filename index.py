@@ -9,7 +9,11 @@ from controllers.public import routes
 
 #configuracao
 
+
+
 aplicativo = App()
 app = aplicativo.get_app()
+app.app_context().push()
+
 
 app.run(debug=True, port=8080)

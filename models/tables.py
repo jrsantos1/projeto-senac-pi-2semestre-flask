@@ -47,6 +47,7 @@ class Extrato(db.Model):
     extrato_data = db.Column(db.Date, nullable=False)
     fluxo = db.Column(db.String(10), nullable=False)
     valor = db.Column(db.Numeric)
+    saldo_atual = db.Column(db.Numeric)
 
 class Endereco_Cliente(db.Model):
     endereco_cliente_id = db.Column(db.Integer, primary_key=True, autoincrement=True)

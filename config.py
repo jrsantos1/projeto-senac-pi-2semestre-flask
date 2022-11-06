@@ -23,5 +23,8 @@ class App:
         db = SQLAlchemy(self.app)
         return db
     
+    def get_engine_db(self):
+        return self.get_db().get_engine()
+    
     def get_path(self):
         return os.path.dirname(os.path.abspath(__file__))
