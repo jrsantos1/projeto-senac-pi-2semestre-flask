@@ -5,6 +5,7 @@ db = App().get_db()
 class Cliente(db.Model):
     cliente_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     cpf = db.Column(db.String(20), nullable=False)
+    sexo = db.Column(db.String(20))
     nome = db.Column(db.String(50), nullable=False)
     data_nascimento = db.Column(db.Date, nullable=False)
     telefone = db.Column(db.String(40))

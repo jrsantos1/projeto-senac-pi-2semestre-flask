@@ -9,8 +9,6 @@ valort_inicial = float(requisicao_dic['USDBRL']['varBid']) / 100
 formart_local = locale.format_string('%.2f%%', valort_inicial*100, grouping=True)
 format = formart_local.replace('.',',')
 
-print(format)
-
 def format_percent(value):
     valort_inicial = float(value) / 100
     formart_local = locale.format_string('%.2f%%', valort_inicial*100, grouping=True)

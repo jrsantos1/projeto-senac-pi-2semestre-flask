@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+<table>
+    <thead>
+        <tr>
+            <th> Nome </th>
+            <th> Data Nascimento </th>
+            <th> Sexo</th>
+            <th> Telefone </th>
+            <th> Conta</th>
+            <th> Saldo </th>
+            <th> Tipo </th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usuario in usuarios %}
+        <tr>
+            <td> {{ usuario.nome }}</td>
+            <td> {{ usuario.data_nascimento }}</td>
+            <td> {{ usuario.sexo }}</td>
+            <td> {{ usuario.telefone }}</td>
+            <td> {{ usuario.conta }}</td>
+            <td> {{ usuario.saldo }}</td>
+            <td> {{ usuario.tipo }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+
+<script type ='text/javascript'> 
+    var graphs = {{grafico_volume_movimentacoes | safe}}; 
+    Plotly.plot('chart',graphs,{}); 
+</script>

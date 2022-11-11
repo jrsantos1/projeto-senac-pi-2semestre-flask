@@ -24,7 +24,7 @@ class App:
         return db
     
     def get_engine_db(self):
-        return self.get_db().get_engine()
+        return self.get_db()
     
     def get_path(self):
         return os.path.dirname(os.path.abspath(__file__))

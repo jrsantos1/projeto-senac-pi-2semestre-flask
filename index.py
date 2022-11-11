@@ -4,7 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import Column, String, Date
 from config import App
 from models.tables import *
-from controllers.private import user  
+from controllers.private import user, admin  
 from controllers.public import routes
 
 #configuracao

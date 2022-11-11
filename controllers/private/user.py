@@ -3,8 +3,7 @@
 from tempfile import template
 import win32com.client as wincl
 from jinja2 import FileSystemLoader, Environment
-import plotly
-import plotly.express as px
+
 import json
 import pythoncom 
 import pandas as pd
@@ -14,12 +13,12 @@ from flask import session, redirect, url_for, render_template, request, flash
 import locale
 
 # libs projeto
-
+from utils.chart.chart_user import *
 from config import App
-from utils.auth import auth
+from utils.auth.auth import *
 from utils.email import config_email as e_mail
 from utils.data.user import *
-from utils.chart import chart_user
+
 from utils.conta.transferencia import *
 from utils.data.cotacoes import get_cotacoes 
 
@@ -37,7 +36,7 @@ def moeda(value):
 @app.route("/user")
 def index_user():
    
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     if valida:
         print(valida)
         return redirect(url_for('login'))
@@ -45,30 +44,16 @@ def index_user():
     cpf = session['usuario_logado']
     cliente = get_cliente(cpf)
     conta = get_conta(cpf)
-    extrato = get_extrato(cpf, size=5)    
+    extrato = get_extrato(cpf, size=5)   
     
     extrato.saldo_atual = lambda x : str(locale.currency(x))
     
-    for extratos in extrato:
-        print(extratos.saldo_atual)
-        print(type(extratos.saldo_atual))
+    # obter json grafico 
+    graphJSON = get_chart_user_historico_movimentacoes(cpf)
     
-    # montando grafico
-    
-    grafico_saldo_atual, grafico_data = chart_user.get_chart_extrato_data(cpf)
-    y = grafico_saldo_atual
-    x = grafico_data
-    df = pd.DataFrame(dict(
-        x = x,
-        y = y 
-    ))
-    fig = px.line(df, y=y or [0],  x=x or [0], title="Saldo Histórico", template='plotly_dark', color_discrete_sequence=px.colors.qualitative.Dark2)
-
-    graphJSON = json.dumps(fig, cls=plotly.utils.PlotlyJSONEncoder)
-    
-    # pegar cotacoes atuais
-    
+    # obter cotacoes atuais
     cotacoes = get_cotacoes()
+    
     dolar = float(cotacoes['dolar']['today'])
     
     return render_template('user/home.html', cliente = cliente, conta = conta, extrato=extrato,graphJSON=graphJSON, cotacao=cotacoes)
@@ -86,7 +71,7 @@ def logout():
 @app.route("/novo_usuario", methods=['POST'])
 def novo_usuario():
     
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -165,7 +150,6 @@ def novo_usuario():
         db.session.commit()
         
         # derrubando sessão
-        
         session['usuario_logado'] = None
         
         flash('Seu cadastro foi criado com sucesso')
@@ -177,7 +161,7 @@ def novo_usuario():
 @app.route('/user/transacao')
 def transacao():
     
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -188,7 +172,7 @@ def transacao():
 # rota para realizar transferência
 @app.route("/user/transferir", methods=['POST'])
 def transferir():   
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -208,7 +192,7 @@ def transferir():
 @app.route("/conta/saque", methods=['POST'])
 def saque():
     
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -225,7 +209,7 @@ def saque():
 
 @app.route("/conta/deposito", methods=['POST'])
 def deposito():
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -242,7 +226,7 @@ def deposito():
         
 @app.route("/user/conta", methods=['GET'])
 def conta_usuario():
-    valida = auth.verificarUsuarioLogado()
+    valida = verificarUsuarioLogado()
     
     if valida:
         print(valida)
@@ -253,3 +237,19 @@ def conta_usuario():
     conta = get_conta(cpf)
     extrato = get_extrato(cpf, size=5)
     return render_template('user/conta.html', cliente = cliente, conta = conta, extrato=extrato)
+
+# rotas de autenticação
+    
+@app.route("/autenticar", methods=['POST'])
+def autenticar():
+    
+    cpf: str = request.form['cpf']
+    senha: str = request.form['senha']
+    
+    autentica: bool = autenticar_usuario(cpf, senha)
+    
+    if autentica:
+        return redirect(url_for('index_user'))
+    else: 
+        flash('falha no login')
+        return redirect(url_for('login'))
