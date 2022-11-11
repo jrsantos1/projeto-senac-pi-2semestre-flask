@@ -240,10 +240,6 @@ def deposito():
     else: 
         return redirect(url_for('transacao'))
         
-        
-    
-    
-        
 @app.route("/user/conta", methods=['GET'])
 def conta_usuario():
     valida = auth.verificarUsuarioLogado()
@@ -251,7 +247,6 @@ def conta_usuario():
     if valida:
         print(valida)
         return redirect(url_for('login'))
-    
     
     cpf = session['usuario_logado']
     cliente = get_cliente(cpf)

@@ -6,6 +6,7 @@ import plotly
 import plotly.express as px
 import json
 import pandas as pd
+from utils.auth.auth import *
 
 aplicativo = App()
 app = aplicativo.get_app()
@@ -49,6 +50,41 @@ def login():
 
 # rotas de autenticação
 
+@app.route('/admin/login')
+def login_admin():
+    if 'admin_logado' in session:
+        if not (session['admin_logado'] == None):
+            return redirect(url_for('admin_home'))
+        
+    return render_template('admin/admin_login.html')
+    
+
+@app.route('/admin/autenticar', methods=['Post'])
+def autenticar_admin():
+    usuario: string = request.form['usuario']
+    senha: string = request.form['senha']
+    
+    usuario_adm = Usuario_Admin.query.filter_by(admin_usuario=request.form['usuario']).first()
+    
+    if usuario_adm: 
+        if senha == usuario_adm.admin_senha:
+            if 'usuario_logado' in session:
+                session['usuario_logado'] = None
+            
+            session['admin_logado'] = usuario
+            
+            return redirect(url_for('admin_home'))
+
+    return redirect(url_for('login_admin'))
+            
+@app.route('/admin')
+def admin_home():
+    logado = verifica_admin_logado()
+    if logado:
+        return render_template('/admin/admin_home.html')
+    else: 
+        return redirect(url_for('login_admin'))    
+    
 @app.route("/autenticar", methods=['POST'])
 def autenticar():
     #recebendo dados enviados pelo formulário 

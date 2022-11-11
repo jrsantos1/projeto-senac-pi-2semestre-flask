@@ -5,8 +5,6 @@ import locale
 requisicao = reque.get("http://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-BRL")
 requisicao_dic = requisicao.json()
 
-print(requisicao_dic)
-
 valort_inicial = float(requisicao_dic['USDBRL']['varBid']) / 100
 formart_local = locale.format_string('%.2f%%', valort_inicial*100, grouping=True)
 format = formart_local.replace('.',',')
