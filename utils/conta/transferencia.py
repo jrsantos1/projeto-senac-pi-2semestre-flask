@@ -154,40 +154,29 @@ def depositar(valor):
         flash('Valor não pode ser menor que 0')
         return False
 
-
     try:
+
         conta.saldo += valor
         db.session.add(conta)
+        db.session.commit()
 
-    except: 
-        print("Erro ao atualizar saldo")
 
-    transacao = Transacao(
-        conta_origem_id=conta.conta_id, 
-        conta_destino_id=conta.conta_id, 
-        transacao_data=data, 
-        valor=valor, 
-        operacao_id=4)
-
-    try:
+        transacao = Transacao(
+            conta_origem_id=conta.conta_id,
+            conta_destino_id=conta.conta_id,
+            transacao_data=data,
+            valor=valor,
+            operacao_id=4)
         db.session.add(transacao)
+        db.session.commit()
 
-    except: 
-        print("Erro ao gerar nova transação")
-        
-
-    try:
         extrato = Extrato(conta_id=conta.conta_id, extrato_data=data, fluxo='Entrada', valor=valor, saldo_atual=conta.saldo)
         db.session.add(extrato)
-        
-    except: 
-        print("Erro ao gerar nova transação")
-
-    
-    try:
         db.session.commit()
-    except:
-        print("Erro ao concluir operação")
-    
+        
+    except Exception as e:
+        print("Erro ao gerar nova transação" + e.with_traceback())
+
+
     flash("Operação realizada com sucesso")
     return True

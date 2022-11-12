@@ -71,11 +71,11 @@ def logout():
 @app.route("/novo_usuario", methods=['POST'])
 def novo_usuario():
     
-    valida = verificarUsuarioLogado()
-    
-    if valida:
-        print(valida)
-        return redirect(url_for('login'))
+    # valida = verificarUsuarioLogado()
+    #
+    # if valida:
+    #     print(valida)
+    #     return redirect(url_for('login'))
         
     cpf =  request.form['cpf']
     cliente = Cliente.query.filter_by(cpf=cpf).first()
@@ -113,76 +113,77 @@ def novo_usuario():
         redirect(url_for('login'))
             
     else:
-        
+
         # criando novo cliente
         print('criando cliente')
-        
+
         nome = request.form['nome']
         nascimento = request.form['nascimento']
         telefone = request.form['telefone']
-        
-        cliente = Cliente(cpf=cpf, nome=nome, data_nascimento=nascimento, telefone=telefone, endereco_cliente_id=endereco.endereco_cliente_id)
+        sexo = request.form['sexo']
+
+        cliente = Cliente(cpf=cpf, nome=nome, data_nascimento=nascimento, telefone=telefone, endereco_cliente_id=endereco.endereco_cliente_id, sexo=sexo)
         db.session.add(cliente)
         db.session.commit()
-        
+
         # salvando foto
-        arquivo = request.files ['arquivo']
-        image_path = aplicativo.get_path().join('/uploads')
-        arquivo.save(f'{image_path}/{cliente.cliente_id}.jpg')
-        
+        # arquivo = request.files ['arquivo']
+        # image_path = aplicativo.get_path().join('/uploads')
+        # arquivo.save(f'{image_path}/{cliente.cliente_id}.jpg')
+
         # criando novo usuário
-        
+
         email =  request.form['email']
         senha = request.form['senha']
-            
+
         usuario = Usuario(email=email, senha=senha, cpf=cpf)
         db.session.add(usuario)
         db.session.commit()
-        
-        #criando nova conta 
-        
+
+        #criando nova conta
+
         conta_numero = request.form['conta']
         saldo = 0
         tipo = request.form['tipo']
-        
+
         conta = Conta(conta=conta_numero, saldo=saldo, tipo=tipo, cliente_id=cliente.cliente_id)
         db.session.add(conta)
         db.session.commit()
-        
+
         # derrubando sessão
         session['usuario_logado'] = None
-        
+
         flash('Seu cadastro foi criado com sucesso')
         return redirect(url_for('login'))
-    
+
     return redirect(url_for('login'))
 
 # Direcionar par tela de transacao
 @app.route('/user/transacao')
 def transacao():
-    
+
     valida = verificarUsuarioLogado()
-    
+
     if valida:
         print(valida)
         return redirect(url_for('login'))
-    
+
     return redirect(url_for('index_user'))
 
 # rota para realizar transferência
 @app.route("/user/transferir", methods=['POST'])
 def transferir():   
     valida = verificarUsuarioLogado()
-    
+
     if valida:
         print(valida)
         return redirect(url_for('login'))
-  
-   # dados destinatario   
+
+   # dados destinatario
     cpf_destinatario = request.form['cpf_destinatario']
 
     transferencia = gerar_transferencia(cpf_destinatario)
-    
+
     if transferencia:
         return redirect(url_for('index_user'))
     else:
@@ -205,7 +206,6 @@ def saque():
         return redirect(url_for('index_user'))
     else: 
         return redirect(url_for('transacao'))
-    
 
 @app.route("/conta/deposito", methods=['POST'])
 def deposito():

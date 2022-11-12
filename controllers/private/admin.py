@@ -42,9 +42,25 @@ def admin_home():
     lista_usuarios = get_usuarios()
     
     grafico_volume = get_grafico_movimentacoes()
-    
-    
+
     return render_template('/admin/admin_home.html', usuarios = lista_usuarios, grafico_volume_movimentacoes = grafico_volume)
+
+@app.route('/admin/editar/<int:id>')
+def admin_editar_usuario(id):
+    pass
+
+@app.route('/admin/excluir', methods=['POST'])
+def admin_excluir_usuario():
+
+    usuario_id = request.form['id']
+
+    deletar = delete_user(usuario_id);
+
+    if deletar:
+        flash('Operação realizada com sucesso')
+        return redirect(url_for('admin_home'))
+    return redirect(url_for('admin_home'))
+
 
 # rota para realizar logout
 @app.route("/admin/logout")
